@@ -64,13 +64,9 @@ async def main():
                     chat_type = "MegaGroup"
             elif isinstance(entity, Chat):
                 chat_type = "Group"
-            elif isinstance(entity, User):
-                if entity.bot:
-                    chat_type = "Bot"
-                else:
-                    chat_type = "User"
             else:
-                chat_type = "Other"
+                # Skip Users, Bots, and other dialog types
+                continue
 
             # Clean name linebreaks for printing
             display_name = name.replace("\n", " ").strip()
