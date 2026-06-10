@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from telethon import TelegramClient
 
 # Load configuration from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 # ---------------------------------------------------------------------
 # Configuration Reading and Validation
@@ -145,7 +145,7 @@ async def download_worker(message, index, total_count):
         progress_cb = create_progress_callback(message.id, video_name, size_mb)
         
         try:
-            output_path = os.path.join(downloads_dir, "")
+            output_path = os.path.join(downloads_dir, video_name)
             await message.download_media(
                 file=output_path,
                 progress_callback=progress_cb

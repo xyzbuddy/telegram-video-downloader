@@ -13,7 +13,7 @@ from telethon import TelegramClient
 from telethon.tl.types import Channel, Chat, User
 
 # Load configuration from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 # ---------------------------------------------------------------------
 # Configuration Reading and Validation
