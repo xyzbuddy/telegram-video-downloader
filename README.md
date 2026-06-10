@@ -36,8 +36,8 @@ Before running the script, make sure you have:
 ### Step 1: Clone the Repository & Install Dependencies
 First, clone the repository to your local machine and install the required library packages (which include the speed-up libraries):
 ```bash
-git clone <your-repository-url>
-cd <repository-directory-name>
+git clone https://github.com/xyzbuddy/telegram-video-downloader.git
+cd telegram-video-downloader
 pip install -r requirements.txt
 ```
 
