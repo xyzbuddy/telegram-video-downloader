@@ -67,7 +67,12 @@ CHANNEL_ID=your_target_channel_id_or_username
 
 > 💡 **Finding Channel ID**:
 > - For public channels, you can use the username directly (e.g., `CHANNEL_ID=my_public_channel_username`).
-> - For private channels, the ID is numeric and typically starts with `-100` (e.g., `CHANNEL_ID=-100123456789`). You can find this ID using third-party Telegram clients or bot services.
+> - For private channels, groups, or chats, the ID is numeric (typically starting with `-100`). 
+> - **We have included a utility script to list these IDs easily!** Simply run:
+>   ```bash
+>   python list_chats.py
+>   ```
+>   This will list all the channels, groups, and chats you are in. Copy the ID of your target channel and paste it as `CHANNEL_ID` in your `.env` file.
 
 ### Step 4: Run the Script
 Execute the downloader:
