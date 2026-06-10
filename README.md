@@ -75,7 +75,12 @@ Execute the downloader:
 python downloader.py
 ```
 
-*On the very first run, the terminal will prompt you to enter your **phone number** (with country code, e.g. `+123456789`) and the **login code** sent to your Telegram app. This creates a secure login session file named `session.session` in the same directory.*
+*On the very first run, the terminal will prompt you for authentication:*
+- **Phone Number**: Enter your phone number with your **country code** prefix included (e.g., `+88017XXXXXXXX` or `+123456789`). The country code prefix (e.g., `+880` or `+1`) is mandatory.
+- **Login Code**: Enter the numeric login code sent to your Telegram app.
+- **2-Factor Authentication (2FA) Password**: If you have 2-Factor Authentication (2FA) enabled on your account, the terminal will ask for your password. **Note**: As you type your password, the characters will **not be visible in the terminal** (no letters, dots, or asterisks will show) for security. Type it blindly and press Enter.
+
+*Once authenticated, this creates a secure login session file named `session.session` in the same directory so you don't have to log in again.*
 
 ---
 

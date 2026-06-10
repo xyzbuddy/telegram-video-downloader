@@ -8,6 +8,7 @@
 
 import os
 import sys
+import re
 import asyncio
 from dotenv import load_dotenv
 from telethon import TelegramClient
@@ -99,13 +100,44 @@ def create_progress_callback(video_id, video_name, size_mb):
 # Single File Download Worker
 # ---------------------------------------------------------------------
 
+def clean_filename(name):
+    """
+    Remove invalid characters from filename and clean extra whitespaces.
+    """
+    cleaned = re.sub(r'[\\/*?:"<>|]', "", name)
+    cleaned = re.sub(r'\s+', " ", cleaned).strip()
+    return cleaned
+
 async def download_worker(message, index, total_count):
     """
     Asynchronous task worker to download a single file with concurrency control.
     """
     file_size = getattr(message.file, "size", 0)
-    video_name = getattr(message.file, "name", f"video_{message.id}.mp4") or f"video_{message.id}.mp4"
     size_mb = file_size / (1024 * 1024)
+
+    # 1. Try to get title from message text/caption
+    video_name = ""
+    if message.text:
+        first_line = message.text.split("\n")[0].strip()
+        if first_line:
+            video_name = clean_filename(first_line)[:50]
+
+    # 2. Fall back to message.file.name
+    if not video_name and getattr(message.file, "name", None):
+        video_name = clean_filename(message.file.name)
+
+    # 3. Fall back to date/time format (e.g. video_YYYYMMDD_HHMMSS.mp4)
+    if not video_name:
+        msg_date = message.date
+        date_str = msg_date.strftime("%Y%m%d_%H%M%S")
+        video_name = f"video_{date_str}"
+
+    # Ensure correct extension (.mp4 or other original extension)
+    ext = getattr(message.file, "ext", ".mp4")
+    if not ext.startswith("."):
+        ext = f".{ext}"
+    if not video_name.lower().endswith(ext.lower()):
+        video_name = f"{video_name}{ext}"
 
     async with DOWNLOAD_SEMAPHORE:
         print(f"\n[Queue {index}/{total_count}] Starting: {video_name} (ID: {message.id})")
