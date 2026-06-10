@@ -67,7 +67,7 @@ CHANNEL_ID=your_target_channel_id_or_username
 
 > 💡 **Finding Channel ID**:
 > - For public channels, you can use the username directly (e.g., `CHANNEL_ID=my_public_channel_username`).
-> - For private channels, the ID is numeric and typically starts with `-100` (e.g., `CHANNEL_ID=-1003098918811`). You can find this ID using third-party Telegram clients or bot services.
+> - For private channels, the ID is numeric and typically starts with `-100` (e.g., `CHANNEL_ID=-100123456789`). You can find this ID using third-party Telegram clients or bot services.
 
 ### Step 4: Run the Script
 Execute the downloader:
