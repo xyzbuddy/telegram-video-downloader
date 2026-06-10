@@ -1,0 +1,16 @@
+# Environment Configuration
+.env
+
+# Telethon Session Data (contain sensitive credentials)
+*.session
+*.session-journal
+
+# Downloads Folder
+downloads/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
