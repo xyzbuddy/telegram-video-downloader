@@ -33,19 +33,15 @@ Before running the script, make sure you have:
 
 ## Quick Start Setup
 
-### Step 1: Clone the Repository
+### Step 1: Clone the Repository & Install Dependencies
+First, clone the repository to your local machine and install the required library packages (which include the speed-up libraries):
 ```bash
 git clone <your-repository-url>
 cd <repository-directory-name>
-```
-
-### Step 2: Install Dependencies
-Install the required packages (including speed optimizations):
-```bash
 pip install -r requirements.txt
 ```
 
-### Step 3: Set up Configuration
+### Step 2: Set up Initial API Credentials
 Copy the template configuration file to a new file named `.env`:
 ```bash
 # On Linux/macOS
@@ -58,34 +54,37 @@ copy .env.example .env
 Copy-Item .env.example .env
 ```
 
-Open the newly created `.env` file in a text editor and fill in your details:
+Open the `.env` file in a text editor and fill in your Telegram API details (leave `CHANNEL_ID` blank or as is for now):
 ```ini
 API_ID=your_api_id_here
 API_HASH=your_api_hash_here
-CHANNEL_ID=your_target_channel_id_or_username
 ```
 
-> 💡 **Finding Channel ID**:
-> - For public channels, you can use the username directly (e.g., `CHANNEL_ID=my_public_channel_username`).
-> - For private channels, groups, or chats, the ID is numeric (typically starting with `-100`). 
-> - **We have included a utility script to list these IDs easily!** Simply run:
->   ```bash
->   python list_chats.py
->   ```
->   This will list all the channels, groups, and chats you are in. Copy the ID of your target channel and paste it as `CHANNEL_ID` in your `.env` file.
+### Step 3: Find Channel ID & First-Time Login
+Now, run the chat lister script. This will connect to Telegram and guide you through the first-time authentication:
+```bash
+python list_chats.py
+```
 
-### Step 4: Run the Script
-Execute the downloader:
+*During this step, the terminal will ask for your login details:*
+- **Phone Number**: Enter your phone number with your **country code** prefix included (e.g., `+88017XXXXXXXX` or `+123456789`). The country code prefix is mandatory.
+- **Login Code**: Enter the numeric login code sent to your Telegram app.
+- **2-Factor Authentication (2FA) Password**: If you have 2FA enabled on your Telegram account, the terminal will ask for your password. **Note**: As you type your password, the characters will **not be visible in the terminal** (no letters, dots, or asterisks will show) for security. Type it blindly and press Enter.
+
+Once logged in, a secure session file named `session.session` will be saved in your project folder, and the script will list all the channels and groups you belong to. Copy the ID of the channel you want to download from (usually starts with `-100`).
+
+### Step 4: Configure the Channel ID
+Open `.env` in a text editor again, and set your `CHANNEL_ID` to the copied value:
+```ini
+CHANNEL_ID=-100xxxxxxxxxx
+```
+Save and close the `.env` file.
+
+### Step 5: Start Downloading
+You are now ready to download the videos! Since you logged in during Step 3, you won't need to log in again. Simply run:
 ```bash
 python downloader.py
 ```
-
-*On the very first run, the terminal will prompt you for authentication:*
-- **Phone Number**: Enter your phone number with your **country code** prefix included (e.g., `+88017XXXXXXXX` or `+123456789`). The country code prefix (e.g., `+880` or `+1`) is mandatory.
-- **Login Code**: Enter the numeric login code sent to your Telegram app.
-- **2-Factor Authentication (2FA) Password**: If you have 2-Factor Authentication (2FA) enabled on your account, the terminal will ask for your password. **Note**: As you type your password, the characters will **not be visible in the terminal** (no letters, dots, or asterisks will show) for security. Type it blindly and press Enter.
-
-*Once authenticated, this creates a secure login session file named `session.session` in the same directory so you don't have to log in again.*
 
 ---
 
