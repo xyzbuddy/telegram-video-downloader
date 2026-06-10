@@ -8,6 +8,7 @@
 
 import os
 import sys
+import asyncio
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
@@ -42,7 +43,6 @@ if not channel_id_raw:
     print("\n[ERROR] CHANNEL_ID is not configured in your .env file.")
     sys.exit(1)
 
-# Channel ID can be a numeric ID (like -100xxxxxxxxxx) or a public username (like 'telegram_username')
 try:
     if channel_id_raw.startswith("-") or channel_id_raw.isdigit():
         channel_id = int(channel_id_raw)
@@ -62,21 +62,73 @@ except ValueError:
 # Telegram Client Initialization
 # ---------------------------------------------------------------------
 
-# A session file named 'session.session' will be created locally to store login token
 client = TelegramClient(
     "session",
     api_id,
     api_hash
 )
 
+# Limit concurrent downloads to 3 files to avoid FloodWaitError (Telegram rate-limits)
+DOWNLOAD_SEMAPHORE = asyncio.Semaphore(3)
+
+# ---------------------------------------------------------------------
+# Download Progress Helper
+# ---------------------------------------------------------------------
+
+def create_progress_callback(video_id, video_name, size_mb):
+    """
+    Creates a callback function to track and display download percentage.
+    """
+    last_percent = -5  # Force print at 0%
+
+    def progress_callback(received, total):
+        nonlocal last_percent
+        if not total:
+            return
+        
+        percent = int((received / total) * 100)
+        
+        # Only print updates every 10% change to keep console clean during concurrency
+        if percent - last_percent >= 10 or percent == 100:
+            last_percent = percent
+            print(f"  -> [Video ID {video_id}] {video_name} ({size_mb:.1f} MB) - {percent}% downloaded")
+            
+    return progress_callback
+
+# ---------------------------------------------------------------------
+# Single File Download Worker
+# ---------------------------------------------------------------------
+
+async def download_worker(message, index, total_count):
+    """
+    Asynchronous task worker to download a single file with concurrency control.
+    """
+    file_size = getattr(message.file, "size", 0)
+    video_name = getattr(message.file, "name", f"video_{message.id}.mp4") or f"video_{message.id}.mp4"
+    size_mb = file_size / (1024 * 1024)
+
+    async with DOWNLOAD_SEMAPHORE:
+        print(f"\n[Queue {index}/{total_count}] Starting: {video_name} (ID: {message.id})")
+        
+        progress_cb = create_progress_callback(message.id, video_name, size_mb)
+        
+        try:
+            output_path = os.path.join(downloads_dir, "")
+            await message.download_media(
+                file=output_path,
+                progress_callback=progress_cb
+            )
+            print(f"✓ [Finished] Video ID: {message.id} ({video_name})")
+            return True
+        except Exception as e:
+            print(f"✗ [Failed] Video ID: {message.id} ({video_name}). Error: {e}")
+            return False
+
 # ---------------------------------------------------------------------
 # Downloader Main Function
 # ---------------------------------------------------------------------
 
 async def main():
-    downloaded_size = 0
-    download_count = 0
-
     # Ensure downloads directory exists
     os.makedirs(downloads_dir, exist_ok=True)
 
@@ -89,7 +141,6 @@ async def main():
     print("Connecting to Telegram...")
     
     try:
-        # Resolve target entity/channel
         entity = await client.get_entity(channel_id)
         channel_title = getattr(entity, 'title', channel_id)
         print(f"Successfully connected! Target: '{channel_title}'")
@@ -99,48 +150,60 @@ async def main():
         print("Please check your CHANNEL_ID, internet connection, or if your user session has access to it.")
         return
 
-    print("\nScanning messages (oldest to newest)...")
+    print("\nScanning messages and applying size budget...")
     print("-" * 50)
 
-    # Read Messages
+    download_queue = []
+    total_scanned_size = 0
+    limit_reached = False
+
+    # Read Messages and calculate sizes first
     async for message in client.iter_messages(
         entity,
         reverse=True
     ):
-        # Skip Non-Videos
         if not message.video:
             continue
 
         file_size = getattr(message.file, "size", 0)
 
-        # Stop if downloading the next file exceeds the size limit
-        if downloaded_size + file_size > MAX_TOTAL_SIZE:
-            print("\n" + "=" * 50)
-            print(f"LIMIT REACHED: Download stopped at {downloaded_size / (1024**3):.2f} GB to prevent exceeding the limit.")
+        # Stop queueing if it goes over size budget
+        if total_scanned_size + file_size > MAX_TOTAL_SIZE:
+            limit_reached = True
             break
 
-        # Display details
-        video_name = getattr(message.file, "name", f"video_{message.id}.mp4") or f"video_{message.id}.mp4"
-        size_mb = file_size / (1024 * 1024)
+        download_queue.append(message)
+        total_scanned_size += file_size
 
-        print(f"\n[{download_count + 1}] Downloading Video (ID: {message.id})")
-        print(f"  Name: {video_name}")
-        print(f"  Size: {size_mb:.2f} MB")
+    total_files = len(download_queue)
+    print(f"Found {total_files} videos to download.")
+    print(f"Total size budget: {total_scanned_size / (1024**3):.2f} GB")
+    
+    if limit_reached:
+        print("Note: Stop limit reached during scan. Some newer files were excluded to stay under limits.")
 
-        # Download Video file
-        try:
-            output_path = os.path.join(downloads_dir, "")
-            await message.download_media(file=output_path)
-            downloaded_size += file_size
-            download_count += 1
-            print(f"  Status: Downloaded successfully!")
-        except Exception as e:
-            print(f"  Status: Failed to download. Error: {e}")
+    if not download_queue:
+        print("No videos found to download.")
+        return
+
+    print("\nStarting Parallel Downloads (Max 3 concurrent)...")
+    print("-" * 50)
+
+    # Spawn all download workers in parallel
+    tasks = [
+        download_worker(message, idx + 1, total_files)
+        for idx, message in enumerate(download_queue)
+    ]
+    
+    results = await asyncio.gather(*tasks)
+    success_count = sum(1 for r in results if r)
 
     print("\n" + "=" * 50)
     print("Download Summary:")
-    print(f"  Total Videos Downloaded : {download_count}")
-    print(f"  Total Size Downloaded   : {downloaded_size / (1024**3):.2f} GB")
+    print(f"  Total Videos Checked    : {total_files}")
+    print(f"  Successfully Downloaded : {success_count}")
+    print(f"  Failed Downloads        : {total_files - success_count}")
+    print(f"  Total Size Budgeted     : {total_scanned_size / (1024**3):.2f} GB")
     print("=" * 50 + "\n")
 
 # ---------------------------------------------------------------------

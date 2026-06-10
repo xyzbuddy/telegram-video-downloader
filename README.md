@@ -1,6 +1,6 @@
 # Telegram Private Video Downloader 📥
 
-An automated Python script to download videos from specific Telegram channels or chats directly to your local machine, using the official Telethon library.
+An automated, high-speed Python script to download videos from specific Telegram channels or chats directly to your local machine, using the official Telethon library.
 
 This repository is designed to be easily cloneable, customizable, and safe (preventing sensitive credentials from leaking to public repositories).
 
@@ -8,9 +8,11 @@ This repository is designed to be easily cloneable, customizable, and safe (prev
 
 ## Features
 
+- **High-Speed Decryption**: Automatically uses `cryptg` (a C-extension) to decrypt files. This yields speeds that are up to 5x-10x faster than default pure-Python decryption.
+- **Concurrently Download (Parallel)**: Downloads up to 3 videos simultaneously using an asynchronous Semaphore. This maximizes bandwidth utilization without triggering Telegram's API rate limiting (`FloodWaitError`).
+- **Live Progress Percentage**: Shows real-time progress update percentages (`10%`, `20%`, ..., `100%`) for each running download.
 - **Automatic Video Filtering**: Automatically identifies and downloads video messages from the specified target chat/channel.
-- **Sequential Download**: Downloads files chronologically (from oldest to newest).
-- **Download Limit Safety**: Prevents downloading excessively by setting a size limit (defaults to 20 GB).
+- **Sequential Scan with Limit Safety**: Scans chronological channel history (from oldest to newest) and budgets files beforehand to respect your maximum size limit (default 20 GB).
 - **Configuration Security**: Keeps secrets like Telegram credentials and sessions separate from the code using environment variables (`.env`).
 - **Resilient**: Robust logging and error handling for failed downloads.
 
@@ -38,7 +40,7 @@ cd <repository-directory-name>
 ```
 
 ### Step 2: Install Dependencies
-Install the required packages using pip:
+Install the required packages (including speed optimizations):
 ```bash
 pip install -r requirements.txt
 ```
